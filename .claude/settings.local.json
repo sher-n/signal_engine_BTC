@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(yarn create:*)",
+      "Bash(yarn install:*)",
+      "Bash(yarn add:*)",
+      "Bash(yarn tsc:*)",
+      "Bash(yarn test:*)",
+      "Bash(yarn seed-history:*)",
+      "Bash(yarn backtest:*)",
+      "Bash(python3:*)",
+      "Bash(sort -t',' -k13 -nr)",
+      "Read(//c/Users/User/playground/signal_engine_BTC/{\n  printf \"\"\"\"\"\"\"\"Trade %2d:  %s  Side: %s  rMultiple: %6.3f  PnL: $%8.2f  Entry: %9.2f/**)",
+      "Bash(awk '{if \\(NF > 0\\) print}')"
+    ]
+  }
+}
