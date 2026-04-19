@@ -1,0 +1,389 @@
+{
+  "project": "btc-signal-engine",
+  "version": "1.0.0",
+  "preset": "LOOSE-3",
+  "stack": {
+    "framework": "Next.js 14+ (App Router)",
+    "language": "TypeScript strict",
+    "packageManager": "yarn",
+    "orm": "Drizzle ORM",
+    "database": "PostgreSQL 16",
+    "cache": "Redis",
+    "testing": "Vitest",
+    "scheduling": "node-cron (worker process)",
+    "charts": "Recharts",
+    "styling": "Tailwind CSS",
+    "decimal": "decimal.js",
+    "validation": "zod",
+    "marketData": "Binance REST API (public)"
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Foundation",
+      "description": "Next.js project setup, Drizzle schema, core types, tooling. No runtime logic yet.",
+      "status": "pending",
+      "gate": null,
+      "features": [
+        {
+          "id": "F1-01",
+          "name": "Next.js project init",
+          "description": "yarn create next-app with App Router, TypeScript strict, Tailwind CSS, ESLint",
+          "files": ["package.json", "next.config.ts", "tsconfig.json", "tailwind.config.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F1-02",
+          "name": "Drizzle ORM setup",
+          "description": "Install drizzle-orm + drizzle-kit + postgres driver. Configure drizzle.config.ts.",
+          "files": ["drizzle.config.ts", "src/db/index.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F1-03",
+          "name": "Drizzle schema",
+          "description": "Full schema: marketSnapshots, signals, signalFills, signalEvents with all enums. Single source of truth.",
+          "files": ["src/db/schema.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F1-04",
+          "name": "Initial migration",
+          "description": "yarn db:generate && yarn db:migrate — creates all tables",
+          "files": ["drizzle/migrations/"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F1-05",
+          "name": "Core types",
+          "description": "src/core/types.ts: Candle, Bias, Momentum, Side, IndicatorSet, EntrySignal, PositionSize, StrategyConfig, DEFAULT_CONFIG (LOOSE-3)",
+          "files": ["src/core/types.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F1-06",
+          "name": "ESLint + Prettier",
+          "description": "Shared config + pre-commit hook via lint-staged",
+          "files": [".eslintrc.json", ".prettierrc", "package.json#scripts"],
+          "status": "pending",
+          "priority": "high"
+        },
+        {
+          "id": "F1-07",
+          "name": "Vitest config",
+          "description": "vitest.config.ts — separate from Next.js jest config, coverage threshold 80%",
+          "files": ["vitest.config.ts"],
+          "status": "pending",
+          "priority": "high"
+        },
+        {
+          "id": "F1-08",
+          "name": "Environment template",
+          "description": "Complete .env.example with all required variables documented",
+          "files": [".env.example", ".env.local"],
+          "status": "pending",
+          "priority": "high"
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "Core Logic",
+      "description": "Pure business logic with full test coverage. Zero I/O. Lives in src/core/.",
+      "status": "pending",
+      "gate": "All tests pass. validate-indicators matches TradingView within 0.01%.",
+      "features": [
+        {
+          "id": "F2-01",
+          "name": "SMA indicator",
+          "description": "sma(values, period): Decimal[] — undefined for first period-1 bars",
+          "files": ["src/core/indicators/sma.ts", "src/core/indicators/__tests__/sma.test.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F2-02",
+          "name": "EMA indicator",
+          "description": "ema(values, period): Decimal[] — Wilder seeding (SMA of first N bars). Must match TradingView ta.ema().",
+          "files": ["src/core/indicators/ema.ts", "src/core/indicators/__tests__/ema.test.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F2-03",
+          "name": "ATR indicator",
+          "description": "atr(candles, period): Decimal[] — RMA/Wilder smoothing (NOT SMA). Seed with SMA of first N TRs.",
+          "files": ["src/core/indicators/atr.ts", "src/core/indicators/__tests__/atr.test.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F2-04",
+          "name": "Validate vs TradingView",
+          "description": "scripts/validate-vs-pine.ts: load known BTC 1H klines, compute EMA14/ATR20, compare vs TradingView reference values. Must be within 0.01%.",
+          "files": ["scripts/validate-vs-pine.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F2-05",
+          "name": "Bias strategy",
+          "description": "computeBias(dailyClose, sma99, neutralPct): Bias",
+          "files": ["src/core/strategy/bias.ts", "src/core/strategy/__tests__/bias.test.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F2-06",
+          "name": "Momentum strategy",
+          "description": "computeMomentum(ema14, ema60, ema14Prev): Momentum",
+          "files": [
+            "src/core/strategy/momentum.ts",
+            "src/core/strategy/__tests__/momentum.test.ts"
+          ],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F2-07",
+          "name": "Entry strategy (LOOSE-3)",
+          "description": "checkEntry(params): EntrySignal | null — all 5 long/short conditions, pullbackAtrMult=0.3",
+          "files": ["src/core/strategy/entry.ts", "src/core/strategy/__tests__/entry.test.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F2-08",
+          "name": "Exit strategy",
+          "description": "evaluateExit(params): ExitDecision — HOLD | TP1 | TP2 | SL | TRAIL_UPDATE. Stateless.",
+          "files": ["src/core/strategy/exit.ts", "src/core/strategy/__tests__/exit.test.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F2-09",
+          "name": "Position sizing",
+          "description": "calculatePositionSize(params): PositionSize — 1% fixed risk, 5 decimal precision",
+          "files": [
+            "src/core/risk/position-size.ts",
+            "src/core/risk/__tests__/position-size.test.ts"
+          ],
+          "status": "pending",
+          "priority": "critical"
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Backtest",
+      "description": "Validate strategy on 2 years of real BTC data. Must pass gate before Phase 4.",
+      "status": "pending",
+      "gate": "Trades > 50, PF > 1.3, MaxDD < 25%, within ±5% of TradingView Pine backtest.",
+      "features": [
+        {
+          "id": "F3-01",
+          "name": "History seeder",
+          "description": "scripts/seed-history.ts — fetch 2y BTC/USDT 1H + 1D klines from Binance, cache to JSON",
+          "files": ["scripts/seed-history.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F3-02",
+          "name": "Backtest runner",
+          "description": "backtest/runner.ts — bar-by-bar replay using same checkEntry + evaluateExit as production",
+          "files": ["backtest/runner.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F3-03",
+          "name": "Backtest metrics",
+          "description": "backtest/metrics.ts — Total Trades, Win Rate, Profit Factor, Max Drawdown, Avg R:R, Sharpe, Expectancy",
+          "files": ["backtest/metrics.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F3-04",
+          "name": "Backtest report",
+          "description": "backtest/report.ts — print summary to console + write per-trade CSV",
+          "files": ["backtest/report.ts"],
+          "status": "pending",
+          "priority": "high"
+        },
+        {
+          "id": "F3-05",
+          "name": "Backtest script",
+          "description": "scripts/backtest-loose3.ts — entry point: load cache → run → print report",
+          "files": ["scripts/backtest-loose3.ts"],
+          "status": "pending",
+          "priority": "critical"
+        }
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "Adapters + API Routes + Worker",
+      "description": "I/O wiring. Requires Phase 3 gate to pass first.",
+      "status": "pending",
+      "gate": "Local integration test: real Postgres + Redis + Binance + Telegram all working.",
+      "features": [
+        {
+          "id": "F4-01",
+          "name": "Binance adapter",
+          "description": "fetchKlines(symbol, interval, limit): Candle[] — zod validation, exponential backoff (3 retries, base 1s)",
+          "files": ["src/adapters/binance.ts", "src/adapters/__tests__/binance.test.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F4-02",
+          "name": "Telegram adapter",
+          "description": "sendAlert(signal, eventType): Promise<void> — Markdown v2, escape special chars, log ALERT_FAILED on failure",
+          "files": ["src/adapters/telegram.ts", "src/adapters/__tests__/telegram.test.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F4-03",
+          "name": "DB adapter (Drizzle)",
+          "description": "Drizzle client singleton. Connection pooling. No business logic.",
+          "files": ["src/adapters/db.ts", "src/db/index.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F4-04",
+          "name": "Redis adapter",
+          "description": "get/set/del with TTL. Used for bias cache + deduplication.",
+          "files": ["src/adapters/redis.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F4-05",
+          "name": "bias-1d API route",
+          "description": "POST /api/bias-1d — fetch 1D klines, compute SMA99, update bias in Redis, log BIAS_UPDATED",
+          "files": ["src/app/api/bias-1d/route.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F4-06",
+          "name": "signal-1h API route",
+          "description": "POST /api/signal-1h — read bias from Redis, compute indicators, evaluate LOOSE-3 entry, create Signal, send alert",
+          "files": ["src/app/api/signal-1h/route.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F4-07",
+          "name": "position-manager API route",
+          "description": "POST /api/position-manager — fetch active signals, evaluate exits, update SL/trail, record fills, send alerts",
+          "files": ["src/app/api/position-manager/route.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F4-08",
+          "name": "Worker (node-cron)",
+          "description": "src/worker/index.ts — cron scheduler: bias-1d daily, signal-1h hourly, position-manager every 5min. Calls API routes via HTTP.",
+          "files": ["src/worker/index.ts"],
+          "status": "pending",
+          "priority": "critical"
+        },
+        {
+          "id": "F4-09",
+          "name": "Dry-run mode",
+          "description": "DRY_RUN=true — compute + alert + log events but do NOT persist Signal row. Tag alerts with [DRY_RUN].",
+          "files": ["src/app/api/*/route.ts"],
+          "status": "pending",
+          "priority": "high"
+        }
+      ]
+    },
+    {
+      "id": "phase-5",
+      "name": "Dashboard UI",
+      "description": "Next.js App Router pages for reviewing signals and performance.",
+      "status": "pending",
+      "gate": "All data renders correctly from Postgres. Charts display equity curve.",
+      "features": [
+        {
+          "id": "F5-01",
+          "name": "Dashboard home page",
+          "description": "/ — equity curve (Recharts), current open signal card, today's stats (trades, PnL)",
+          "files": ["src/app/page.tsx", "src/app/layout.tsx"],
+          "status": "pending",
+          "priority": "high"
+        },
+        {
+          "id": "F5-02",
+          "name": "Signals list page",
+          "description": "/signals — table of all signals: status badge, side, entry, SL, TP1, TP2, realized PnL, R:R",
+          "files": ["src/app/signals/page.tsx"],
+          "status": "pending",
+          "priority": "high"
+        },
+        {
+          "id": "F5-03",
+          "name": "Signal detail page",
+          "description": "/signals/[id] — fills timeline, events log, indicator values at entry",
+          "files": ["src/app/signals/[id]/page.tsx"],
+          "status": "pending",
+          "priority": "medium"
+        },
+        {
+          "id": "F5-04",
+          "name": "Shared UI components",
+          "description": "StatusBadge, SignalCard, PnlCell, MetricStat — reusable across pages",
+          "files": ["src/components/"],
+          "status": "pending",
+          "priority": "medium"
+        }
+      ]
+    }
+  ],
+  "skills_required": {
+    "languages": ["TypeScript (strict mode)", "SQL (PostgreSQL)", "TSX (React)"],
+    "runtime": ["Node.js 20+"],
+    "tools": [
+      "yarn (package manager)",
+      "Vitest (unit + integration tests)",
+      "ESLint + Prettier",
+      "drizzle-kit (schema generation + migrations)",
+      "node-cron (scheduler)"
+    ],
+    "libraries": [
+      "next (framework)",
+      "drizzle-orm (ORM)",
+      "decimal.js (price/qty arithmetic)",
+      "zod (runtime validation)",
+      "ioredis (Redis client)",
+      "node-cron (worker scheduler)",
+      "recharts (dashboard charts)",
+      "tailwindcss (styling)"
+    ],
+    "services": [
+      "Binance REST API (market data — no auth needed)",
+      "Telegram Bot API (alerts)",
+      "PostgreSQL 16 (persistence)",
+      "Redis (bias cache, deduplication)"
+    ],
+    "concepts": [
+      "Technical analysis: SMA, EMA, ATR, trend-following",
+      "Risk management: fixed fractional sizing, R:R ratio",
+      "Backtesting: bar-by-bar replay, equity curve, drawdown",
+      "Next.js App Router: RSC, route handlers, server actions",
+      "Drizzle ORM: schema definition, migrations, query builder"
+    ]
+  },
+  "current_phase": "phase-1",
+  "last_updated": "2026-04-19"
+}
