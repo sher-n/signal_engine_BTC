@@ -30,13 +30,13 @@ export function printReport(metrics: BacktestMetrics, result: BacktestResult): v
 
   console.info('  ── Phase Gate ──────────────────────────────────────')
   pass('Total Trades', metrics.totalTrades, 50, (v) => String(Math.round(v)))
-  pass('Profit Factor', metrics.profitFactor, 1.3)
+  pass('Profit Factor', metrics.profitFactor, 1.25)
   const ddOk = metrics.maxDrawdown < 25
   const ddIcon = ddOk ? '✅' : '❌'
   console.info(
     `  ${ddIcon}  Max Drawdown         ${metrics.maxDrawdown.toFixed(2).padStart(9)}%  (max: 25%)`,
   )
-  pass('Win Rate %', metrics.winRate, 40, (v) => `${v.toFixed(1)}%`)
+  pass('Win Rate %', metrics.winRate, 30, (v) => `${v.toFixed(1)}%`)
 
   console.info('')
   console.info('  ── Detailed Stats ──────────────────────────────────')

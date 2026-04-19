@@ -48,8 +48,9 @@ export function checkEntry(params: {
     const stopLoss = entry.minus(atr20.times(atrSlMult))
     const tp1 = entry.plus(atr20.times(atrTp1Mult))
     const tp2 = entry.plus(atr20.times(atrTp2Mult))
+    const entry2Trigger = entry.minus(atr20.times(config.entry2AtrOffset))
 
-    return { side: 'LONG', entry, stopLoss, tp1, tp2, atrAtEntry: atr20 }
+    return { side: 'LONG', entry, entry2Trigger, stopLoss, tp1, tp2, atrAtEntry: atr20 }
   }
 
   // ── SHORT ────────────────────────────────────────────────────────────────
@@ -64,8 +65,9 @@ export function checkEntry(params: {
     const stopLoss = entry.plus(atr20.times(atrSlMult))
     const tp1 = entry.minus(atr20.times(atrTp1Mult))
     const tp2 = entry.minus(atr20.times(atrTp2Mult))
+    const entry2Trigger = entry.plus(atr20.times(config.entry2AtrOffset))
 
-    return { side: 'SHORT', entry, stopLoss, tp1, tp2, atrAtEntry: atr20 }
+    return { side: 'SHORT', entry, entry2Trigger, stopLoss, tp1, tp2, atrAtEntry: atr20 }
   }
 
   return null

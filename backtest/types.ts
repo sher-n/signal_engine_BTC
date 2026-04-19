@@ -40,14 +40,22 @@ export interface ClosedTrade {
 export interface BacktestPosition {
   id: number
   side: Side
-  entry: Decimal
+  entry: Decimal // weighted avg entry (updates after E2 fill)
+  entry1Price: Decimal // E1 fill price (immutable, for display)
   stopLoss: Decimal
   initialSl: Decimal
   tp1: Decimal
   tp2: Decimal
   atrAtEntry: Decimal
-  quantity: Decimal // full position
+  quantity: Decimal // total position (grows after E2 fill)
   remainingQty: Decimal
+  totalInitialRisk: Decimal // E1 risk + E2 risk in USDT (for R-multiple)
+  // Split entry
+  entry2Pending: boolean // true until E2 fires or SL hit
+  entry2Trigger: Decimal
+  entry2Filled: boolean
+  entry2Price: Decimal | null
+  // Tracking
   tp1Hit: boolean
   tp2Hit: boolean
   trailAnchor: Decimal | null

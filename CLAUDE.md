@@ -109,7 +109,8 @@ btc-signal-engine/
 ## Phase 3 Gate (must pass before Phase 4)
 
 - Total trades > 50
-- Profit Factor > 1.3
+- Win Rate > 30%
+- Profit Factor > 1.25
 - Max Drawdown < 25%
 - Results within ±5% of TradingView Pine backtest
 

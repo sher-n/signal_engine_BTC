@@ -40,11 +40,12 @@ export interface IndicatorSet {
 
 export interface EntrySignal {
   side: Side
-  entry: Decimal // = close price of triggering bar
-  stopLoss: Decimal // entry ± 1.5 × ATR
-  tp1: Decimal // entry ± 1.5 × ATR
-  tp2: Decimal // entry ± 3.0 × ATR
-  atrAtEntry: Decimal // snapshot of ATR at entry — used for all exit calcs
+  entry: Decimal // Entry 1 fill price (= bar close)
+  entry2Trigger: Decimal // Entry 2 fires when price reaches entry ∓ 1×ATR
+  stopLoss: Decimal // entry ± slMult × ATR (shared by both tranches)
+  tp1: Decimal // entry ± tp1Mult × ATR
+  tp2: Decimal // entry ± tp2Mult × ATR
+  atrAtEntry: Decimal // ATR snapshot — used for all exit calcs
 }
 
 // ============================================================================
@@ -76,16 +77,19 @@ export interface ExitDecision {
 // ============================================================================
 
 export interface StrategyConfig {
-  pullbackAtrMult: Decimal // 0.3 — pullback zone width
-  slopeBars: number // 3   — EMA14 slope lookback period
+  pullbackAtrMult: Decimal // 0.3  — pullback zone width
+  slopeBars: number // 3    — EMA14 slope lookback
   neutralPct: Decimal // 0.01 — ±1% SMA99 band for NEUTRAL bias
-  slMult: Decimal // 1.5 — SL distance in ATR multiples
-  tp1Mult: Decimal // 1.5 — TP1 distance
-  tp2Mult: Decimal // 3.0 — TP2 distance
-  trailMult: Decimal // 2.0 — trail stop distance from anchor
+  slMult: Decimal // 1.5  — SL distance in ATR multiples
+  tp1Mult: Decimal // 15.0 — TP1 distance
+  tp2Mult: Decimal // 25.0 — TP2 distance
+  trailMult: Decimal // 2.0  — trail stop distance from anchor
   tp1Pct: Decimal // 0.40 — 40% of position closed at TP1
   tp2Pct: Decimal // 0.30 — 30% of position closed at TP2
   // remaining 30% is trailed
+  entry2AtrOffset: Decimal // 1.0  — Entry 2 triggers at entry ∓ 1×ATR
+  entry1RiskPct: Decimal // 0.5  — first tranche risk %
+  entry2RiskPct: Decimal // 1.0  — second tranche risk %
 }
 
 /** LOOSE-3 preset — default production config */
@@ -94,9 +98,12 @@ export const DEFAULT_CONFIG: StrategyConfig = {
   slopeBars: 3,
   neutralPct: new Decimal('0.01'),
   slMult: new Decimal('1.5'),
-  tp1Mult: new Decimal('1.5'),
-  tp2Mult: new Decimal('3.0'),
+  tp1Mult: new Decimal('15.0'),
+  tp2Mult: new Decimal('25.0'),
   trailMult: new Decimal('2.0'),
   tp1Pct: new Decimal('0.4'),
   tp2Pct: new Decimal('0.3'),
+  entry2AtrOffset: new Decimal('1.0'),
+  entry1RiskPct: new Decimal('0.5'),
+  entry2RiskPct: new Decimal('1.0'),
 }

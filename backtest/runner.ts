@@ -25,8 +25,6 @@ import type { Candle, StrategyConfig } from '../src/core/types'
 import type { BacktestPosition, BacktestResult, ClosedTrade, PartialExit } from './types'
 
 const ACCOUNT_BALANCE = new Decimal(10_000)
-
-export const RISK_PERCENT_DEFAULT = new Decimal(1)
 const SMA99_PERIOD = 99
 const EMA14_PERIOD = 14
 const EMA60_PERIOD = 60
@@ -36,7 +34,6 @@ export function runBacktest(
   candles1h: Candle[],
   candles1d: Candle[],
   config: StrategyConfig,
-  riskPercent: Decimal = RISK_PERCENT_DEFAULT,
 ): BacktestResult {
   // ── Pre-compute 1D indicators ─────────────────────────────────────────────
   const closes1d = candles1d.map((c) => c.close)
@@ -73,8 +70,9 @@ export function runBacktest(
 
   function closePosition(pos: BacktestPosition, barIndex: number, barDate: Date): ClosedTrade {
     const totalPnl = pos.partialExits.reduce((s, e) => s.plus(e.pnl), new Decimal(0))
-    const initialRisk = pos.entry.minus(pos.initialSl).abs().times(pos.quantity)
-    const rMultiple = initialRisk.isZero() ? new Decimal(0) : totalPnl.dividedBy(initialRisk)
+    const rMultiple = pos.totalInitialRisk.isZero()
+      ? new Decimal(0)
+      : totalPnl.dividedBy(pos.totalInitialRisk)
 
     const winLoss = totalPnl.greaterThan(0) ? 'WIN' : totalPnl.lessThan(0) ? 'LOSS' : 'BREAKEVEN'
 
@@ -150,8 +148,43 @@ export function runBacktest(
         trades.push(closePosition(openPos, i, bar.closeTime))
         equityCurve.push({ date: bar.closeTime, equity })
         openPos = null
+        continue
       }
-      continue // one action per bar (no entry on same bar as exit)
+
+      // ── Entry 2 fill check (only while position still open) ───────────────
+      if (openPos && openPos.entry2Pending && !openPos.entry2Filled) {
+        const e2Triggered =
+          openPos.side === 'LONG'
+            ? bar.low.lessThanOrEqualTo(openPos.entry2Trigger)
+            : bar.high.greaterThanOrEqualTo(openPos.entry2Trigger)
+
+        if (e2Triggered) {
+          const e2Price = openPos.entry2Trigger
+          const e2Sizing = calculatePositionSize({
+            accountBalance: equity,
+            riskPercent: config.entry2RiskPct,
+            entry: e2Price,
+            stopLoss: openPos.initialSl, // same SL — tighter stop distance → larger qty
+            tp1: openPos.tp1,
+            tp2: openPos.tp2,
+          })
+
+          const newTotalQty = openPos.quantity.plus(e2Sizing.quantity)
+          openPos.entry = openPos.entry
+            .times(openPos.quantity)
+            .plus(e2Price.times(e2Sizing.quantity))
+            .dividedBy(newTotalQty)
+
+          openPos.quantity = newTotalQty
+          openPos.remainingQty = openPos.remainingQty.plus(e2Sizing.quantity)
+          openPos.totalInitialRisk = openPos.totalInitialRisk.plus(e2Sizing.riskUsd)
+          openPos.entry2Filled = true
+          openPos.entry2Pending = false
+          openPos.entry2Price = e2Price
+        }
+      }
+
+      continue // one action per bar
     }
 
     // ── Entry check (no open position) ───────────────────────────────────────
@@ -170,9 +203,9 @@ export function runBacktest(
 
     if (!signal) continue
 
-    const sizing = calculatePositionSize({
+    const e1Sizing = calculatePositionSize({
       accountBalance: equity,
-      riskPercent,
+      riskPercent: config.entry1RiskPct,
       entry: signal.entry,
       stopLoss: signal.stopLoss,
       tp1: signal.tp1,
@@ -182,14 +215,20 @@ export function runBacktest(
     openPos = {
       id: ++tradeId,
       side: signal.side,
-      entry: signal.entry,
+      entry: signal.entry, // avg entry — will update on E2 fill
+      entry1Price: signal.entry,
       stopLoss: signal.stopLoss,
       initialSl: signal.stopLoss,
       tp1: signal.tp1,
       tp2: signal.tp2,
       atrAtEntry: signal.atrAtEntry,
-      quantity: sizing.quantity,
-      remainingQty: sizing.quantity,
+      quantity: e1Sizing.quantity,
+      remainingQty: e1Sizing.quantity,
+      totalInitialRisk: e1Sizing.riskUsd,
+      entry2Pending: true,
+      entry2Trigger: signal.entry2Trigger,
+      entry2Filled: false,
+      entry2Price: null,
       tp1Hit: false,
       tp2Hit: false,
       trailAnchor: null,
