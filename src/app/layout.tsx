@@ -13,10 +13,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body
-        className={fredoka.className}
-        style={{ backgroundColor: 'var(--color-bg)', minHeight: '100vh' }}
-      >
+      <body className={fredoka.className}>
         <nav
           style={{
             backgroundColor: 'var(--color-surface)',

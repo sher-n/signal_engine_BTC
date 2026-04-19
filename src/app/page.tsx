@@ -42,12 +42,10 @@ interface DashboardData {
 
 function SideChip({ side }: { side: 'LONG' | 'SHORT' }) {
   const bg = side === 'LONG' ? 'var(--color-long-dim)' : 'var(--color-short-dim)'
-  const col = side === 'LONG' ? 'var(--color-win)' : 'var(--color-loss)'
   return (
     <span
       style={{
         background: bg,
-        color: col,
         padding: '2px 8px',
         borderRadius: '4px',
         fontSize: '11px',
