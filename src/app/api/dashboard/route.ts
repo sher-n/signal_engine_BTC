@@ -1,12 +1,19 @@
 import { NextResponse } from 'next/server'
 import Decimal from 'decimal.js'
+import fs from 'fs'
+import path from 'path'
 import { desc, eq, inArray } from 'drizzle-orm'
 import { db } from '../../../db'
 import { signals } from '../../../db/schema'
 
 const INITIAL_EQUITY = new Decimal(process.env.ACCOUNT_BALANCE_USDT ?? '10000')
+const MOCK_FILE = path.join(process.cwd(), 'data', 'mock-dashboard.json')
 
 export async function GET() {
+  if (process.env.PLAYGROUND === 'true') {
+    const mock = JSON.parse(fs.readFileSync(MOCK_FILE, 'utf-8'))
+    return NextResponse.json(mock)
+  }
   // Closed trades with their fills
   const closedSignals = await db.query.signals.findMany({
     where: eq(signals.status, 'CLOSED'),

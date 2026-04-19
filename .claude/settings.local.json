@@ -16,7 +16,10 @@
       "Bash(yarn db:migrate)",
       "Bash(yarn build *)",
       "Bash(yarn dev *)",
-      "Bash(curl -s http://localhost:3000/api/dashboard)"
+      "Bash(curl -s http://localhost:3000/api/dashboard)",
+      "Bash(PLAYGROUND=true curl -s http://localhost:3000/api/dashboard)",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s \"http://localhost:3000/api/dashboard\" -H \"x-playground: true\")"
     ]
   }
 }
