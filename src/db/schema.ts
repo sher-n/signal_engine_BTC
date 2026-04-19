@@ -1,72 +1,33 @@
 import { createId } from '@paralleldrive/cuid2'
-import {
-  index,
-  jsonb,
-  numeric,
-  pgEnum,
-  pgTable,
-  timestamp,
-  unique,
-  varchar,
-} from 'drizzle-orm/pg-core'
+import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 import { relations } from 'drizzle-orm'
-
-// ============================================================================
-// Enums
-// ============================================================================
-
-export const signalSideEnum = pgEnum('signal_side', ['LONG', 'SHORT'])
-
-export const signalStatusEnum = pgEnum('signal_status', [
-  'ACTIVE',
-  'TP1_HIT',
-  'TP2_HIT',
-  'CLOSED',
-  'CANCELLED',
-])
-
-export const fillTypeEnum = pgEnum('fill_type', ['TP1', 'TP2', 'TP3_TRAIL', 'SL', 'BE'])
-
-export const eventTypeEnum = pgEnum('event_type', [
-  'SIGNAL_CREATED',
-  'ENTRY_SKIPPED',
-  'TP1_HIT',
-  'TP2_HIT',
-  'SL_HIT',
-  'TRAIL_UPDATED',
-  'SIGNAL_CLOSED',
-  'BIAS_UPDATED',
-  'FETCH_ERROR',
-  'ALERT_SENT',
-  'ALERT_FAILED',
-])
 
 // ============================================================================
 // market_snapshots — OHLCV + computed indicators per bar
 // ============================================================================
 
-export const marketSnapshots = pgTable(
+export const marketSnapshots = sqliteTable(
   'market_snapshots',
   {
-    id: varchar('id', { length: 30 })
+    id: text('id')
       .primaryKey()
       .$defaultFn(() => createId()),
-    symbol: varchar('symbol', { length: 20 }).notNull(),
-    timeframe: varchar('timeframe', { length: 5 }).notNull(), // '1D' | '1H'
-    closedAt: timestamp('closed_at', { withTimezone: true }).notNull(),
+    symbol: text('symbol').notNull(),
+    timeframe: text('timeframe').notNull(), // '1D' | '1H'
+    closedAt: integer('closed_at', { mode: 'timestamp_ms' }).notNull(),
 
-    open: numeric('open', { precision: 20, scale: 8 }).notNull(),
-    high: numeric('high', { precision: 20, scale: 8 }).notNull(),
-    low: numeric('low', { precision: 20, scale: 8 }).notNull(),
-    close: numeric('close', { precision: 20, scale: 8 }).notNull(),
-    volume: numeric('volume', { precision: 28, scale: 8 }).notNull(),
+    open: text('open').notNull(),
+    high: text('high').notNull(),
+    low: text('low').notNull(),
+    close: text('close').notNull(),
+    volume: text('volume').notNull(),
 
-    sma99: numeric('sma99', { precision: 20, scale: 8 }),
-    ema14: numeric('ema14', { precision: 20, scale: 8 }),
-    ema60: numeric('ema60', { precision: 20, scale: 8 }),
-    atr20: numeric('atr20', { precision: 20, scale: 8 }),
+    sma99: text('sma99'),
+    ema14: text('ema14'),
+    ema60: text('ema60'),
+    atr20: text('atr20'),
 
-    createdAt: timestamp('created_at').defaultNow(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).$defaultFn(() => new Date()),
   },
   (t) => [
     unique('uq_snapshot').on(t.symbol, t.timeframe, t.closedAt),
@@ -78,33 +39,35 @@ export const marketSnapshots = pgTable(
 // signals — full trade lifecycle
 // ============================================================================
 
-export const signals = pgTable(
+export const signals = sqliteTable(
   'signals',
   {
-    id: varchar('id', { length: 30 })
+    id: text('id')
       .primaryKey()
       .$defaultFn(() => createId()),
-    symbol: varchar('symbol', { length: 20 }).notNull(),
-    side: signalSideEnum('side').notNull(),
-    status: signalStatusEnum('status').notNull().default('ACTIVE'),
+    symbol: text('symbol').notNull(),
+    side: text('side', { enum: ['LONG', 'SHORT'] }).notNull(),
+    status: text('status', { enum: ['ACTIVE', 'TP1_HIT', 'TP2_HIT', 'CLOSED', 'CANCELLED'] })
+      .notNull()
+      .default('ACTIVE'),
 
-    entryPrice: numeric('entry_price', { precision: 20, scale: 8 }).notNull(),
-    stopLoss: numeric('stop_loss', { precision: 20, scale: 8 }).notNull(), // moves with BE/trail
-    initialSl: numeric('initial_sl', { precision: 20, scale: 8 }).notNull(), // immutable
-    tp1: numeric('tp1', { precision: 20, scale: 8 }).notNull(),
-    tp2: numeric('tp2', { precision: 20, scale: 8 }).notNull(),
-    atrAtEntry: numeric('atr_at_entry', { precision: 20, scale: 8 }).notNull(),
-    quantity: numeric('quantity', { precision: 20, scale: 8 }).notNull(), // full position
-    remainingQty: numeric('remaining_qty', { precision: 20, scale: 8 }).notNull(), // decreases with TPs
+    entryPrice: text('entry_price').notNull(),
+    stopLoss: text('stop_loss').notNull(), // current SL (moves with BE/trail)
+    initialSl: text('initial_sl').notNull(), // immutable
+    tp1: text('tp1').notNull(),
+    tp2: text('tp2').notNull(),
+    atrAtEntry: text('atr_at_entry').notNull(),
+    quantity: text('quantity').notNull(),
+    remainingQty: text('remaining_qty').notNull(),
 
-    trailAnchor: numeric('trail_anchor', { precision: 20, scale: 8 }), // set after TP2 hit
+    trailAnchor: text('trail_anchor'),
 
-    biasSnapshotId: varchar('bias_snapshot_id', { length: 30 }),
-    entrySnapshotId: varchar('entry_snapshot_id', { length: 30 }),
+    biasSnapshotId: text('bias_snapshot_id'),
+    entrySnapshotId: text('entry_snapshot_id'),
 
-    openedAt: timestamp('opened_at').defaultNow(),
-    closedAt: timestamp('closed_at'),
-    realizedPnl: numeric('realized_pnl', { precision: 20, scale: 8 }),
+    openedAt: integer('opened_at', { mode: 'timestamp_ms' }).$defaultFn(() => new Date()),
+    closedAt: integer('closed_at', { mode: 'timestamp_ms' }),
+    realizedPnl: text('realized_pnl'),
   },
   (t) => [
     index('idx_signals_status').on(t.symbol, t.status),
@@ -113,41 +76,55 @@ export const signals = pgTable(
 )
 
 // ============================================================================
-// signal_fills — partial closes (TP1, TP2, trail, SL)
+// signal_fills — partial closes
 // ============================================================================
 
-export const signalFills = pgTable(
+export const signalFills = sqliteTable(
   'signal_fills',
   {
-    id: varchar('id', { length: 30 })
+    id: text('id')
       .primaryKey()
       .$defaultFn(() => createId()),
-    signalId: varchar('signal_id', { length: 30 })
+    signalId: text('signal_id')
       .notNull()
       .references(() => signals.id),
-    type: fillTypeEnum('type').notNull(),
-    price: numeric('price', { precision: 20, scale: 8 }).notNull(),
-    quantity: numeric('quantity', { precision: 20, scale: 8 }).notNull(),
-    pnl: numeric('pnl', { precision: 20, scale: 8 }).notNull(),
-    filledAt: timestamp('filled_at').defaultNow(),
+    type: text('type', { enum: ['TP1', 'TP2', 'TP3_TRAIL', 'SL', 'BE'] }).notNull(),
+    price: text('price').notNull(),
+    quantity: text('quantity').notNull(),
+    pnl: text('pnl').notNull(),
+    filledAt: integer('filled_at', { mode: 'timestamp_ms' }).$defaultFn(() => new Date()),
   },
   (t) => [index('idx_fills_signal').on(t.signalId)],
 )
 
 // ============================================================================
-// signal_events — audit log for everything
+// signal_events — audit log
 // ============================================================================
 
-export const signalEvents = pgTable(
+export const signalEvents = sqliteTable(
   'signal_events',
   {
-    id: varchar('id', { length: 30 })
+    id: text('id')
       .primaryKey()
       .$defaultFn(() => createId()),
-    signalId: varchar('signal_id', { length: 30 }).references(() => signals.id),
-    eventType: eventTypeEnum('event_type').notNull(),
-    payload: jsonb('payload').notNull(),
-    createdAt: timestamp('created_at').defaultNow(),
+    signalId: text('signal_id').references(() => signals.id),
+    eventType: text('event_type', {
+      enum: [
+        'SIGNAL_CREATED',
+        'ENTRY_SKIPPED',
+        'TP1_HIT',
+        'TP2_HIT',
+        'SL_HIT',
+        'TRAIL_UPDATED',
+        'SIGNAL_CLOSED',
+        'BIAS_UPDATED',
+        'FETCH_ERROR',
+        'ALERT_SENT',
+        'ALERT_FAILED',
+      ],
+    }).notNull(),
+    payload: text('payload', { mode: 'json' }).notNull().$type<Record<string, unknown>>(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).$defaultFn(() => new Date()),
   },
   (t) => [
     index('idx_events_signal').on(t.signalId, t.createdAt),

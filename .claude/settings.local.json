@@ -11,7 +11,12 @@
       "Bash(python3:*)",
       "Bash(sort -t',' -k13 -nr)",
       "Read(//c/Users/User/playground/signal_engine_BTC/{\n  printf \"\"\"\"\"\"\"\"Trade %2d:  %s  Side: %s  rMultiple: %6.3f  PnL: $%8.2f  Entry: %9.2f/**)",
-      "Bash(awk '{if \\(NF > 0\\) print}')"
+      "Bash(awk '{if \\(NF > 0\\) print}')",
+      "Bash(yarn db:generate)",
+      "Bash(yarn db:migrate)",
+      "Bash(yarn build *)",
+      "Bash(yarn dev *)",
+      "Bash(curl -s http://localhost:3000/api/dashboard)"
     ]
   }
 }
