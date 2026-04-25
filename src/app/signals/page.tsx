@@ -2,26 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { fmtDate, fmtPrice, fmtPnl, pnlColor } from '../../lib/format'
+import type { SignalRow } from '../../lib/api-contracts'
 
 const REFRESH_MS = 10 * 60 * 1000
 
 type Filter = 'ALL' | 'WIN' | 'LOSS' | 'ACTIVE'
-
-interface SignalRow {
-  id: string
-  side: 'LONG' | 'SHORT'
-  status: string
-  entryPrice: string
-  stopLoss: string
-  tp1: string
-  tp2: string
-  atrAtEntry: string
-  quantity: string
-  realizedPnl: string | null
-  openedAt: number | null
-  closedAt: number | null
-  fillCount: number
-}
 
 function sideChip(side: 'LONG' | 'SHORT') {
   const bg = side === 'LONG' ? 'var(--color-long-dim)' : 'var(--color-short-dim)'
@@ -57,16 +42,28 @@ export default function SignalsPage() {
   const [rows, setRows] = useState<SignalRow[]>([])
   const [filter, setFilter] = useState<Filter>('ALL')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
-  const fetchData = useCallback(async () => {
-    const res = await fetch('/api/signals/history')
-    if (res.ok) setRows(await res.json())
-    setLoading(false)
+  const fetchData = useCallback(async (isBackgroundRefresh = false) => {
+    if (isBackgroundRefresh) setRefreshing(true)
+    try {
+      const res = await fetch('/api/signals/history')
+      if (!res.ok) throw new Error(`Request failed with status ${res.status}`)
+      setRows(await res.json())
+      setError(null)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      setError(`Failed to load signal history. ${message}`)
+    } finally {
+      if (isBackgroundRefresh) setRefreshing(false)
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
-    fetchData()
-    const id = setInterval(fetchData, REFRESH_MS)
+    fetchData(false)
+    const id = setInterval(() => void fetchData(true), REFRESH_MS)
     return () => clearInterval(id)
   }, [fetchData])
 
@@ -125,10 +122,18 @@ export default function SignalsPage() {
         }}
       >
         <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Signal History</h1>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ color: 'var(--color-subtle)', fontSize: '12px' }}>
+            {refreshing ? 'Refreshing...' : 'Auto-refresh 10 min'}
+          </span>
           {(['ALL', 'ACTIVE', 'WIN', 'LOSS'] as Filter[]).map(filterBtn)}
         </div>
       </div>
+      {error ? (
+        <p style={{ fontSize: '13px', color: 'var(--color-loss)' }}>
+          {error} {rows.length > 0 ? 'Showing last successful snapshot.' : ''}
+        </p>
+      ) : null}
 
       {/* Table */}
       <div
@@ -139,8 +144,25 @@ export default function SignalsPage() {
           overflow: 'auto',
         }}
       >
-        {loading ? (
+        {loading && rows.length === 0 ? (
           <p style={{ padding: '24px', color: 'var(--color-muted)', fontSize: '13px' }}>Loading…</p>
+        ) : rows.length === 0 ? (
+          <div style={{ padding: '24px', color: 'var(--color-subtle)', fontSize: '13px' }}>
+            <p style={{ marginBottom: '10px' }}>No signals available yet.</p>
+            <button
+              onClick={() => void fetchData(false)}
+              style={{
+                background: 'var(--color-primary)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '8px 12px',
+                cursor: 'pointer',
+              }}
+            >
+              Retry
+            </button>
+          </div>
         ) : filtered.length === 0 ? (
           <p style={{ padding: '24px', color: 'var(--color-subtle)', fontSize: '13px' }}>
             No signals found.

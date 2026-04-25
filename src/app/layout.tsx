@@ -50,6 +50,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           >
             Signals
           </Link>
+          <Link
+            href="/metrics"
+            style={{ color: 'var(--color-muted)', fontSize: '14px', textDecoration: 'none' }}
+          >
+            Metric
+          </Link>
         </nav>
         <main style={{ padding: '24px', maxWidth: '1280px', margin: '0 auto' }}>{children}</main>
       </body>

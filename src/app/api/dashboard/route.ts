@@ -2,18 +2,46 @@ import { NextResponse } from 'next/server'
 import Decimal from 'decimal.js'
 import fs from 'fs'
 import path from 'path'
-import { desc, eq, inArray } from 'drizzle-orm'
-import { db } from '../../../db'
-import { signals } from '../../../db/schema'
+import { dashboardDataSchema, type DashboardData } from '../../../lib/api-contracts'
 
 const INITIAL_EQUITY = new Decimal(process.env.ACCOUNT_BALANCE_USDT ?? '10000')
 const MOCK_FILE = path.join(process.cwd(), 'data', 'mock-dashboard.json')
+const EMPTY_DASHBOARD: DashboardData = {
+  stats: {
+    netPnl: 0,
+    returnPct: 0,
+    totalTrades: 0,
+    winRate: 0,
+    profitFactor: null,
+    maxDrawdown: 0,
+    openCount: 0,
+  },
+  equityCurve: [],
+  openPositions: [],
+}
 
 export async function GET() {
   if (process.env.PLAYGROUND === 'true') {
-    const mock = JSON.parse(fs.readFileSync(MOCK_FILE, 'utf-8'))
-    return NextResponse.json(mock)
+    try {
+      if (!fs.existsSync(MOCK_FILE)) {
+        console.error(
+          `[api/dashboard] Missing mock file at ${MOCK_FILE}. Returning empty fallback.`,
+        )
+        return NextResponse.json(EMPTY_DASHBOARD, { status: 200 })
+      }
+      const mock = JSON.parse(fs.readFileSync(MOCK_FILE, 'utf-8'))
+      return NextResponse.json(dashboardDataSchema.parse(mock))
+    } catch (error) {
+      console.error('[api/dashboard] Invalid mock payload. Returning empty fallback.', error)
+      return NextResponse.json(EMPTY_DASHBOARD, { status: 200 })
+    }
   }
+  const [{ desc, eq, inArray }, { db }, { signals }] = await Promise.all([
+    import('drizzle-orm'),
+    import('../../../db'),
+    import('../../../db/schema'),
+  ])
+
   // Closed trades with their fills
   const closedSignals = await db.query.signals.findMany({
     where: eq(signals.status, 'CLOSED'),
@@ -59,7 +87,7 @@ export async function GET() {
     if (dd > maxDD) maxDD = dd
   }
 
-  return NextResponse.json({
+  const payload: DashboardData = {
     stats: {
       netPnl: netPnl.toNumber(),
       returnPct: INITIAL_EQUITY.isZero()
@@ -85,5 +113,7 @@ export async function GET() {
       remainingQty: s.remainingQty,
       openedAt: s.openedAt,
     })),
-  })
+  }
+
+  return NextResponse.json(dashboardDataSchema.parse(payload))
 }
